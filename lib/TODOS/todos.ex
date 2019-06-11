@@ -27,15 +27,21 @@ defmodule TODOS do
   # uses IO to print the list items or a msg
   @spec print_todos(atom | pid | {atom, any} | {:via, atom, any}) :: any
   def print_todos(todo_list) do
-    Agent.get(todo_list, fn list ->
-      if Map.size(list) == 0 do
+    Agent.get(todo_list, fn state ->
+      if Map.size(state) == 0 do
         IO.puts("the list is empty")
       end
 
-      keys = Map.keys(list)
+      keys =
+        Enum.sort(
+          Map.keys(state),
+          fn a, b ->
+            Date.compare(state[a]["complete_by"], state[b]["complete_by"]) == :lt
+          end
+        )
 
       Enum.each(keys, fn key ->
-        IO.puts("#{list[key]["complete_by"]}\n#{key}. #{list[key]["name"]}")
+        IO.puts("#{state[key]["complete_by"]}\n#{key}. #{state[key]["name"]}")
       end)
     end)
   end
@@ -88,9 +94,9 @@ defmodule TODOS do
   end
 
   def load_todos(file_name) do
+    new_list = new_todo_list()
     {_, file} = File.read(file_name)
     split_string = String.split(file, ~r/\n/)
-    new_list = new_todo_list()
 
     new_state =
       Enum.reduce(split_string, %{}, fn item, acc ->
@@ -108,14 +114,15 @@ defmodule TODOS do
     new_list
   end
 
-  # seed function that produces a list and adds 2 items
+  # seed function that produces a list and adds 4 items
+  @spec seed :: pid
   def seed do
     todo_list = new_todo_list()
     add_todo(todo_list, 1, "beer", "01/02/2020")
     add_todo(todo_list, 2, "bread", "01/01/2020")
     add_todo(todo_list, 3, "cheese", "03/01/2021")
     add_todo(todo_list, 4, "doritos", "05/01/2021")
-
     save_todo_list(todo_list, "date.txt")
+    todo_list
   end
 end
