@@ -25,17 +25,33 @@ defmodule TODOS do
   end
 
   def delete_todo(todo_list, key) do
-    Agent.get_and_update(todo_list, fn map ->
-      {:ok, value} = Map.fetch(map, key)
+    Agent.cast(todo_list, fn state ->
+      has_key = check_key_exists(state, key)
 
-      val = Map.pop(map, key)
-
-      if map_size(map) == 1 do
-        IO.puts("the list is empty")
-        val
+      if has_key == false do
+        IO.puts("key '#{key}' does not exist")
+        state
+      else
+        Map.delete(state, key)
       end
-
-      val
     end)
+  end
+
+  def check_key_exists(shopping_list, key) do
+    keys = Map.keys(shopping_list)
+
+    has_key =
+      Enum.any?(keys, fn item ->
+        item == key
+      end)
+
+    has_key
+  end
+
+  def seed do
+    todo_list = new_todo_list()
+    add_todo(todo_list, 1, "bread")
+    add_todo(todo_list, 2, "cheese")
+    todo_list
   end
 end
