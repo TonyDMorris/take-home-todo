@@ -7,17 +7,25 @@ defmodule TODOS do
     pid
   end
 
-  @spec add_todo(atom | pid | {atom, any} | {:via, atom, any}, any, any) ::
-          atom | pid | {atom, any} | {:via, atom, any}
-  def add_todo(todo_list, todo_number, todo_item) do
+  def add_todo(todo_list, todo_number, todo_item, date_string) do
+    day_month_year = String.split(date_string, ~r/\//)
+    {day, _} = List.pop_at(day_month_year, 0)
+    {month, _} = List.pop_at(day_month_year, 1)
+    {year, _} = List.pop_at(day_month_year, 2)
+
+    {_, date} =
+      Date.new(String.to_integer(year), String.to_integer(month), String.to_integer(day))
+
     Agent.update(todo_list, fn list ->
-      Map.put(list, todo_number, todo_item)
+      todo = %{"name" => todo_item, "complete_by" => date}
+      Map.put(list, todo_number, todo)
     end)
 
     todo_list
   end
 
   # uses IO to print the list items or a msg
+  @spec print_todos(atom | pid | {atom, any} | {:via, atom, any}) :: any
   def print_todos(todo_list) do
     Agent.get(todo_list, fn list ->
       if Map.size(list) == 0 do
@@ -26,7 +34,9 @@ defmodule TODOS do
 
       keys = Map.keys(list)
 
-      Enum.each(keys, fn key -> IO.puts("#{key}. #{list[key]}") end)
+      Enum.each(keys, fn key ->
+        IO.puts("#{list[key]["complete_by"]}\n#{key}. #{list[key]["name"]}")
+      end)
     end)
   end
 
@@ -58,11 +68,19 @@ defmodule TODOS do
   # saves the given todo list to a named file
   def save_todo_list(todo_list, file_name) do
     Agent.get(todo_list, fn state ->
-      keys = Map.keys(state)
+      keys =
+        Enum.sort(
+          Map.keys(state),
+          fn a, b ->
+            Date.compare(state[a]["complete_by"], state[b]["complete_by"]) == :lt
+          end
+        )
+
+      IO.puts("#{keys}")
 
       file =
         Enum.reduce(keys, "", fn key, acc ->
-          acc <> "#{key} #{state[key]}\n"
+          acc <> "#{state[key]["complete_by"]}\n#{key}. #{state[key]["name"]}\n"
         end)
 
       File.write(file_name, file)
@@ -93,8 +111,11 @@ defmodule TODOS do
   # seed function that produces a list and adds 2 items
   def seed do
     todo_list = new_todo_list()
-    add_todo(todo_list, 1, "bread")
-    add_todo(todo_list, 2, "cheese")
-    todo_list
+    add_todo(todo_list, 1, "beer", "01/02/2020")
+    add_todo(todo_list, 2, "bread", "01/01/2020")
+    add_todo(todo_list, 3, "cheese", "03/01/2021")
+    add_todo(todo_list, 4, "doritos", "05/01/2021")
+
+    save_todo_list(todo_list, "date.txt")
   end
 end
