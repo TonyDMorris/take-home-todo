@@ -23,7 +23,7 @@ defmodule TODOSTest do
     shopping = TODOS.new_todo_list()
     TODOS.add_todo(shopping, 1, "bread")
 
-    empty_map = TODOS.delete_todo(shopping, 5)
+    empty_map = TODOS.delete_todo(shopping, 1)
     assert empty_map == %{}
   end
 end
