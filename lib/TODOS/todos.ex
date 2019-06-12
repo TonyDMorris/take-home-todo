@@ -50,7 +50,8 @@ defmodule TODOS do
         IO.puts("key '#{key}' does not exist")
         state
       else
-        Map.delete(state, key)
+        new_todo_map = Map.delete(state, key)
+        re_order_map(new_todo_map)
       end
     end)
   end
@@ -90,7 +91,7 @@ defmodule TODOS do
 
         todo = %{"name" => name, "complete_by" => date}
 
-        Map.put(acc, key, todo)
+        Map.put(acc, String.to_integer(key), todo)
       end)
 
     Agent.cast(new_list, fn _ -> new_state end)

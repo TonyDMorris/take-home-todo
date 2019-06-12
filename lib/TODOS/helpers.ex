@@ -2,6 +2,7 @@ defmodule HELPERS do
   # helper function to check if a key exists within a map
   def check_key_exists(shopping_list, key) do
     keys = Map.keys(shopping_list)
+    IO.inspect(keys)
 
     has_key =
       Enum.any?(keys, fn item ->
@@ -35,6 +36,24 @@ defmodule HELPERS do
     case Date.from_iso8601(date) do
       {:ok, _} -> true
       _ -> false
+    end
+  end
+
+  def re_order_map(todo_map) do
+    length = Map.size(todo_map)
+    keys = Enum.to_list(1..length)
+    values = Map.values(todo_map)
+    re_order_keys(%{}, keys, values)
+  end
+
+  def re_order_keys(map, keys, values) do
+    if keys == [] do
+      map
+    else
+      [val | left_overs] = values
+      [key | other_keys] = keys
+      list = Map.put(map, key, val)
+      re_order_keys(list, left_overs, other_keys)
     end
   end
 end
