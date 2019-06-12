@@ -2,7 +2,6 @@ defmodule HELPERS do
   # helper function to check if a key exists within a map
   def check_key_exists(shopping_list, key) do
     keys = Map.keys(shopping_list)
-    IO.inspect(keys)
 
     has_key =
       Enum.any?(keys, fn item ->
@@ -53,7 +52,7 @@ defmodule HELPERS do
       [val | left_overs] = values
       [key | other_keys] = keys
       list = Map.put(map, key, val)
-      re_order_keys(list, left_overs, other_keys)
+      re_order_keys(list, other_keys, left_overs)
     end
   end
 end
