@@ -1,8 +1,8 @@
 2020-01-01
-2. bread
+2 bread
 2020-02-01
-1. beer
+1 beer
 2021-01-03
-3. cheese
+3 cheese
 2021-01-05
-4. doritos
+4 doritos

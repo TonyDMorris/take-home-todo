@@ -1,5 +1,6 @@
 defmodule TODOS do
   use Agent
+  import HELPERS
 
   # returns the pid of the current todo_list
   def new_todo_list() do
@@ -8,16 +9,10 @@ defmodule TODOS do
   end
 
   def add_todo(todo_list, todo_number, todo_item, date_string) do
-    day_month_year = String.split(date_string, ~r/\//)
-    {day, _} = List.pop_at(day_month_year, 0)
-    {month, _} = List.pop_at(day_month_year, 1)
-    {year, _} = List.pop_at(day_month_year, 2)
-
-    {_, date} =
-      Date.new(String.to_integer(year), String.to_integer(month), String.to_integer(day))
+    date = normalize_date(date_string)
+    todo = %{"name" => todo_item, "complete_by" => date}
 
     Agent.update(todo_list, fn list ->
-      todo = %{"name" => todo_item, "complete_by" => date}
       Map.put(list, todo_number, todo)
     end)
 
@@ -59,18 +54,6 @@ defmodule TODOS do
     end)
   end
 
-  # helper function to check if a key exists within a map
-  def check_key_exists(shopping_list, key) do
-    keys = Map.keys(shopping_list)
-
-    has_key =
-      Enum.any?(keys, fn item ->
-        item == key
-      end)
-
-    has_key
-  end
-
   # saves the given todo list to a named file
   def save_todo_list(todo_list, file_name) do
     Agent.get(todo_list, fn state ->
@@ -82,11 +65,9 @@ defmodule TODOS do
           end
         )
 
-      IO.puts("#{keys}")
-
       file =
         Enum.reduce(keys, "", fn key, acc ->
-          acc <> "#{state[key]["complete_by"]}\n#{key}. #{state[key]["name"]}\n"
+          acc <> "#{state[key]["complete_by"]}\n#{key} #{state[key]["name"]}\n"
         end)
 
       File.write(file_name, file)
@@ -96,18 +77,21 @@ defmodule TODOS do
   def load_todos(file_name) do
     new_list = new_todo_list()
     {_, file} = File.read(file_name)
-    split_string = String.split(file, ~r/\n/)
+
+    [_ | split_string] = Enum.reverse(String.split(file, ~r/\s/))
+    prepared_list = Enum.chunk_every(split_string, 3)
+    IO.inspect(prepared_list)
 
     new_state =
-      Enum.reduce(split_string, %{}, fn item, acc ->
-        [key | value] = String.split(item, ~r/\s/)
+      Enum.reduce(prepared_list, %{}, fn item, acc ->
+        IO.inspect(item)
+        [name | key_and_date] = item
+        [key | date_string] = key_and_date
+        date = normalize_date(un_normalize_date(date_string))
 
-        if key == "" do
-          acc
-        else
-          IO.puts("#{key} #{value}")
-          Map.put(acc, key, value)
-        end
+        todo = %{"name" => name, "complete_by" => date}
+
+        Map.put(acc, key, todo)
       end)
 
     Agent.cast(new_list, fn _ -> new_state end)
