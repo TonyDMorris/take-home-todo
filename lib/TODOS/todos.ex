@@ -8,6 +8,7 @@ defmodule TODOS do
     pid
   end
 
+  # adds a todo and normalizes the date for later use
   def add_todo(todo_list, todo_number, todo_item, date_string) do
     date = normalize_date(date_string)
     todo = %{"name" => todo_item, "complete_by" => date}
@@ -80,12 +81,10 @@ defmodule TODOS do
 
     [_ | split_string] = Enum.reverse(String.split(file, ~r/\s/))
     prepared_list = Enum.chunk_every(split_string, 3)
-    IO.inspect(prepared_list)
 
     new_state =
-      Enum.reduce(prepared_list, %{}, fn item, acc ->
-        IO.inspect(item)
-        [name | key_and_date] = item
+      Enum.reduce(prepared_list, %{}, fn chunk, acc ->
+        [name | key_and_date] = chunk
         [key | date_string] = key_and_date
         date = normalize_date(un_normalize_date(date_string))
 
@@ -107,6 +106,10 @@ defmodule TODOS do
     add_todo(todo_list, 3, "cheese", "03/01/2021")
     add_todo(todo_list, 4, "doritos", "05/01/2021")
     save_todo_list(todo_list, "date.txt")
-    todo_list
+    delete_todo(todo_list, 3)
+    delete_todo(todo_list, 8)
+    print_todos(todo_list)
+
+    load_todos("date.txt")
   end
 end
