@@ -102,15 +102,13 @@ defmodule TODOS do
   @spec seed :: pid
   def seed do
     todo_list = new_todo_list()
-    add_todo(todo_list, 1, "beer", "01/02/2020")
-    add_todo(todo_list, 2, "bread", "01/01/2020")
+    add_todo(todo_list, 1, "beer", "01/01/2020")
+    add_todo(todo_list, 2, "bread", "01/02/2020")
     add_todo(todo_list, 3, "cheese", "03/01/2021")
     add_todo(todo_list, 4, "doritos", "05/01/2021")
     save_todo_list(todo_list, "date.txt")
     delete_todo(todo_list, 3)
-    delete_todo(todo_list, 8)
-    print_todos(todo_list)
-
-    load_todos("date.txt")
+    new_todos = load_todos("date.txt")
+    print_todos(new_todos)
   end
 end
