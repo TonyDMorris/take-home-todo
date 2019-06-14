@@ -1,14 +1,17 @@
-defmodule TODOS do
+defmodule Todos do
   use Agent
-  import HELPERS
+  import Helpers
 
   # returns the pid of the current todo_list
+  @spec new_todo_list :: pid
   def new_todo_list() do
-    {:ok, pid} = Agent.start_link(fn -> %{} end)
+    {_, pid} = Agent.start_link(fn -> %{} end)
     pid
   end
 
-  # adds a todo and normalizes the date for later use
+  # adds a todo and converts the date to a date struct for later use
+  @spec add_todo(atom | pid | {atom, any} | {:via, atom, any}, any, any, binary) ::
+          atom | pid | {atom, any} | {:via, atom, any}
   def add_todo(todo_list, todo_number, todo_item, date_string) do
     date = normalize_date(date_string)
     todo = %{"name" => todo_item, "complete_by" => date}
@@ -23,25 +26,27 @@ defmodule TODOS do
   # uses IO to print the list items or a msg
   @spec print_todos(atom | pid | {atom, any} | {:via, atom, any}) :: any
   def print_todos(todo_list) do
-    Agent.get(todo_list, fn state ->
-      if Map.size(state) == 0 do
-        IO.puts("the list is empty")
-      end
+    list = Agent.get(todo_list, fn state -> state end)
 
-      keys =
-        Enum.sort(
-          Map.keys(state),
-          fn a, b ->
-            Date.compare(state[a]["complete_by"], state[b]["complete_by"]) == :lt
-          end
-        )
+    if Map.size(list) == 0 do
+      IO.puts("the list is empty")
+    end
 
-      Enum.each(keys, fn key ->
-        IO.puts("#{state[key]["complete_by"]}\n#{key}. #{state[key]["name"]}")
-      end)
+    keys =
+      Enum.sort(
+        Map.keys(list),
+        fn a, b ->
+          Date.compare(list[a]["complete_by"], list[b]["complete_by"]) == :lt
+        end
+      )
+
+    Enum.each(keys, fn key ->
+      IO.puts("#{list[key]["complete_by"]}\n#{key}. #{list[key]["name"]}")
     end)
   end
 
+  # deletes a todo and rearanges the keys to replace the missing value
+  @spec delete_todo(atom | pid | {atom, any} | {:via, atom, any}, any) :: :ok
   def delete_todo(todo_list, key) do
     Agent.cast(todo_list, fn state ->
       has_key = check_key_exists(state, key)
@@ -57,25 +62,34 @@ defmodule TODOS do
   end
 
   # saves the given todo list to a named file
-  def save_todo_list(todo_list, file_name) do
-    Agent.get(todo_list, fn state ->
-      keys =
-        Enum.sort(
-          Map.keys(state),
-          fn a, b ->
-            Date.compare(state[a]["complete_by"], state[b]["complete_by"]) == :lt
-          end
-        )
+  @spec save_todos(atom | pid | {atom, any} | {:via, atom, any}, any) :: any
+  def save_todos(todo_list, file_name) do
+    list = Agent.get(todo_list, fn state -> state end)
 
-      file =
-        Enum.reduce(keys, "", fn key, acc ->
-          acc <> "#{state[key]["complete_by"]}\n#{key} #{state[key]["name"]}\n"
-        end)
+    keys =
+      Enum.sort(
+        Map.keys(list),
+        fn a, b ->
+          Date.compare(list[a]["complete_by"], list[b]["complete_by"]) == :lt
+        end
+      )
 
-      File.write(file_name, file)
-    end)
+    file =
+      Enum.reduce(keys, "", fn key, acc ->
+        acc <> "#{list[key]["complete_by"]}\n#{key} #{list[key]["name"]}\n"
+      end)
+
+    File.write(file_name, file)
   end
 
+  # loads todos from the specified file and converts the string keys to integers and the date lists back to date structs
+  @spec load_todos(
+          binary
+          | maybe_improper_list(
+              binary | maybe_improper_list(any, binary | []) | char,
+              binary | []
+            )
+        ) :: pid
   def load_todos(file_name) do
     new_list = new_todo_list()
     {_, file} = File.read(file_name)
@@ -106,9 +120,10 @@ defmodule TODOS do
     add_todo(todo_list, 2, "bread", "01/02/2020")
     add_todo(todo_list, 3, "cheese", "03/01/2021")
     add_todo(todo_list, 4, "doritos", "05/01/2021")
-    save_todo_list(todo_list, "date.txt")
+    save_todos(todo_list, "date.txt")
     delete_todo(todo_list, 3)
     new_todos = load_todos("date.txt")
     print_todos(new_todos)
+    new_todos
   end
 end
