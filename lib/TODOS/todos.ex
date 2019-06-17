@@ -94,16 +94,16 @@ defmodule Todos do
     new_list = new_todo_list()
     {_, file} = File.read(file_name)
 
-    [_ | split_string] = Enum.reverse(String.split(file, ~r/\s/))
-    prepared_list = Enum.chunk_every(split_string, 3)
+    [_ | split_string] = Enum.reverse(String.split(file, ~r/\n/))
+    prepared_list = Enum.chunk_every(split_string, 2)
 
     new_state =
       Enum.reduce(prepared_list, %{}, fn chunk, acc ->
-        [name | key_and_date] = chunk
-        [key | date_string] = key_and_date
+        [key_and_name | date_string] = chunk
+        [key | name] = String.split(key_and_name, ~r/\s/)
         date = normalize_date(un_normalize_date(date_string))
 
-        todo = %{"name" => name, "complete_by" => date}
+        todo = %{"name" => Enum.join(name, " "), "complete_by" => date}
 
         Map.put(acc, String.to_integer(key), todo)
       end)
